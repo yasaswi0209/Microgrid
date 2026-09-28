@@ -1,0 +1,9 @@
+node_modules
+.git
+__pycache__
+*.sqlite3
+*.sqlite3-wal
+*.sqlite3-shm
+backend/model.joblib
+.env
+preview

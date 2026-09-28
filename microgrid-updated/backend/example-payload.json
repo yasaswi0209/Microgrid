@@ -1,0 +1,8 @@
+{
+ "device_id":"esp32-01","component_id":"microgrid-bus","timestamp":0,
+ "source":"live","quality":"good",
+ "voltage":230,"current":2.1,"temperature":31,"converter_temperature":44,"soc":78,
+ "solar":0.8,"wind":0,"load":0.45,"grid":-0.03,"battery":-0.3,"losses":0.02,
+ "humidity":52,"wind_speed":3.4,
+ "units":{"voltage":"V","current":"A","temperature":"C","converter_temperature":"C","soc":"%","solar":"kW","wind":"kW","load":"kW","grid":"kW","battery":"kW","losses":"kW","humidity":"%","wind_speed":"m/s"}
+}

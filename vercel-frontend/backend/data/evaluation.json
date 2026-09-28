@@ -1,0 +1,58 @@
+{
+  "source_url": "https://data.open-power-system-data.org/household_data/2020-04-15/household_data_60min_singleindex.csv",
+  "source_sha256": "15956440b27465686eae2abf5895cbc3dab80f934a891bcb2f4f944428e97d60",
+  "source": "Open Power System Data / CoSSMic residential3, southern Germany",
+  "license": "CC BY 4.0",
+  "horizon_seconds": 3600,
+  "units": "kW (hourly average)",
+  "excluded_interpolated_or_invalid_intervals": 729,
+  "measured_rows": 11174,
+  "features": "Current and 1h/2h/24h lagged solar/load, target hour sine/cosine, target month and weekday",
+  "split": "60/20/20 chronological, purged boundary labels",
+  "train_samples": 6592,
+  "validation_samples": 2197,
+  "test_samples": 2198,
+  "train_end": 1481630400.0,
+  "validation_start": 1481634000.0,
+  "validation_end": 1489543200.0,
+  "test_start": 1489546800.0,
+  "targets": {
+    "solar": {
+      "selected_model": "Histogram Boosting absolute error",
+      "validation_mae_candidates": {
+        "Random Forest depth 8": 0.048712155648947375,
+        "Random Forest depth 16": 0.04851209000649671,
+        "Extra Trees depth 16": 0.051011850870604496,
+        "Histogram Boosting absolute error": 0.04364829443113063,
+        "Persistence baseline": 0.07620163859808832,
+        "Daily seasonal baseline": 0.08720300409649523
+      },
+      "test_mae": 0.1260653246624398,
+      "test_rmse": 0.26714778202832706,
+      "persistence_test_mae": 0.2505131938125568,
+      "persistence_test_rmse": 0.4083153030627136,
+      "validation_interval_radius_kw": 0.1341523779477089,
+      "interval_nominal_coverage": 0.9,
+      "interval_test_coverage": 0.7374886260236578
+    },
+    "load": {
+      "selected_model": "Histogram Boosting absolute error",
+      "validation_mae_candidates": {
+        "Random Forest depth 8": 0.23887141935039158,
+        "Random Forest depth 16": 0.24146013259415516,
+        "Extra Trees depth 16": 0.2382034660051537,
+        "Histogram Boosting absolute error": 0.22360829899185958,
+        "Persistence baseline": 0.25972826581702324,
+        "Daily seasonal baseline": 0.360056895766955
+      },
+      "test_mae": 0.5714461514313672,
+      "test_rmse": 17.142829380296178,
+      "persistence_test_mae": 0.61503457688808,
+      "persistence_test_rmse": 17.14747937007194,
+      "validation_interval_radius_kw": 0.5639807611128119,
+      "interval_nominal_coverage": 0.9,
+      "interval_test_coverage": 0.9222020018198362
+    }
+  },
+  "note": "Historical results for one German household; no guarantee on another microgrid. Missing physical sensors remain unavailable. Test forecasts are precomputed using only data available at each issue time."
+}

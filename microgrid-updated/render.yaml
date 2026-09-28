@@ -1,0 +1,10 @@
+services:
+  - type: web
+    name: smart-microgrid
+    plan: free
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /api/health
+    envVars:
+      - key: PYTHONUNBUFFERED
+        value: "1"
