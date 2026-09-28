@@ -9,15 +9,17 @@ from engine import Engine,validate
 ROOT=Path(__file__).resolve().parent
 DB=Path(os.getenv('MICROGRID_DB',str(ROOT/'telemetry.sqlite3')))
 STARTED=time.time()
+DATASET_ONLY=os.getenv('MICROGRID_DATASET_ONLY','1')=='1'
 CHANGED=threading.Condition()
 REVISION=0
 CACHE={}
 LOCK=threading.RLock()
 ENGINES={}; MODELS={}; MODEL_ERROR=None
-try:
- import joblib
- if (ROOT/'model.joblib').exists(): MODELS=joblib.load(ROOT/'model.joblib')
-except Exception as e: MODEL_ERROR=str(e)
+if not DATASET_ONLY:
+ try:
+  import joblib
+  if (ROOT/'model.joblib').exists(): MODELS=joblib.load(ROOT/'model.joblib')
+ except Exception as e: MODEL_ERROR=str(e)
 SCENARIO='normal'
 def connect():
  c=sqlite3.connect(DB,timeout=10); c.execute('PRAGMA busy_timeout=10000'); c.row_factory=sqlite3.Row; return c
@@ -159,6 +161,12 @@ def simulate():
   time.sleep(2)
 
 class Handler(SimpleHTTPRequestHandler):
+ def setup(self):
+  super().setup()
+  self.connection.settimeout(15)
+ def list_directory(self,path):
+  self.send_error(404,'Not found')
+  return None
  def __init__(self,*a,**kw):super().__init__(*a,directory=str(ROOT.parent/'dist'),**kw)
  def handle(self):
   try:super().handle()
@@ -167,12 +175,19 @@ class Handler(SimpleHTTPRequestHandler):
    self.close_connection=True
  def end_headers(self):
   self.send_header('Cache-Control','no-store')
+  self.send_header('X-Content-Type-Options','nosniff')
+  self.send_header('Referrer-Policy','strict-origin-when-cross-origin')
+  self.send_header('Content-Security-Policy',"default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'")
   super().end_headers()
  def log_message(self,*a):pass
  def json(self,data,status=200):
   b=json.dumps(data).encode();self.send_response(status);self.send_header('Content-Type','application/json');self.send_header('Content-Length',str(len(b)));self.end_headers();self.wfile.write(b)
  def do_GET(self):
   p=urlparse(self.path);q=parse_qs(p.query);mode=q.get('mode',['dataset'])[0];device=q.get('device',[None])[0]
+  if DATASET_ONLY and (mode!='dataset' or p.path in ['/api/events','/api/rules']):return self.json({'error':'Only dataset analysis is enabled'},404)
+  if p.path=='/api/health' and DATASET_ONLY:
+   rows,metrics=dataset_files()
+   return self.json({'ok':bool(rows),'mode':'dataset','prediction_source':'Precomputed historical model forecasts','records':len(rows),'uptime_seconds':round(time.time()-STARTED)})
   if p.path=='/api/questions':return self.json([{'id':v['id'],'category':v['category'],'question':v['question']} for v in catalog()])
   if p.path=='/api/state':return self.json(snapshot(mode,device))
   if p.path=='/api/health':return self.json({'ok':True,'uptime_seconds':round(time.time()-STARTED),'model_loaded':bool(MODELS),'model_device':MODELS.get('device_id'),'rules_configured':bool(LIVE_RULES),'stream':'event-driven SSE','database':'SQLite WAL','model_error':MODEL_ERROR})
@@ -204,6 +219,7 @@ class Handler(SimpleHTTPRequestHandler):
  def do_POST(self):
   global SCENARIO
   # Mutations require same-origin browser calls, or a device token for ingestion.
+  if DATASET_ONLY and self.path!='/api/chat':return self.json({'error':'Only dataset analysis is enabled'},404)
   origin=self.headers.get('Origin')
   if origin and urlparse(origin).netloc!=self.headers.get('Host'):return self.json({'error':'Origin rejected'},403)
   try:
@@ -230,6 +246,6 @@ class Handler(SimpleHTTPRequestHandler):
 
 if __name__=='__main__':
  ap=argparse.ArgumentParser();ap.add_argument('--port',type=int,default=8000);ap.add_argument('--host',default=os.getenv('MICROGRID_BIND','127.0.0.1'));args=ap.parse_args()
- if os.getenv('MICROGRID_ENABLE_SIMULATION')=='1':threading.Thread(target=simulate,daemon=True).start()
+ if not DATASET_ONLY and os.getenv('MICROGRID_ENABLE_SIMULATION')=='1':threading.Thread(target=simulate,daemon=True).start()
  print(f'Microgrid running at http://localhost:{args.port}',flush=True)
  ThreadingHTTPServer((args.host,args.port),Handler).serve_forever()
